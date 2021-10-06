@@ -134,7 +134,8 @@ export const tokenTransfer = async (tokenAddress, recipient, iAmount) => {
 
         const absErc20 = web4.getContractAbstraction(ERC20Abi);
         const instExampleToken = await absErc20.getInstance(tokenAddress);
-        const amount = new BigNumber(iAmount).shiftedBy(+18).toString();
+        const decimals = await fetchContractData('decimals', ERC20Abi, tokenAddress)
+        const amount = new BigNumber(iAmount).shiftedBy(+decimals).toString();
         const r = await instExampleToken.transfer(recipient, amount);
         return true;
     } catch (err) {
@@ -158,7 +159,8 @@ export const tokenApprove = async (tokenAddress, recipient, iAmount) => {
 
         const absErc20 = web4.getContractAbstraction(ERC20Abi);
         const instExampleToken = await absErc20.getInstance(tokenAddress);
-        const amount = new BigNumber(iAmount).shiftedBy(+18).toString();
+        const decimals = await fetchContractData('decimals', ERC20Abi, tokenAddress)
+        const amount = new BigNumber(iAmount).shiftedBy(+decimals).toString();
         const r = await instExampleToken.approve(recipient, amount);
         return true;
     } catch (err) {

@@ -9,7 +9,16 @@
     <div class="amount">
       <p class="amount__text">Amount</p>
       <div class="amount__content">
-        <input class="amount__content_input" type="text" v-model="amount" />
+        <ValidationObserver>
+          <ValidationProvider
+            :rules="`required|double|max_value:${balance}`"
+            v-slot="{ errors }"
+            ref="amount"
+          >
+            <input class="amount__content_input" type="text" v-model="amount" />
+            <span class="error">{{ errors[0] }}</span>
+          </ValidationProvider>
+        </ValidationObserver>
         <CustomButton
           :type="'select'"
           :message="selectedCrypto"
@@ -20,7 +29,16 @@
     </div>
     <div class="address">
       <p class="address__text">Address (recipient)</p>
-      <input class="address__input" type="text" v-model="recipient" />
+      <ValidationObserver>
+        <ValidationProvider
+          rules="required|max:42|address"
+          v-slot="{ errors }"
+          ref="address"
+        >
+          <input class="address__input" type="text" v-model="recipient" />
+          <span class="error">{{ errors[0] }}</span>
+        </ValidationProvider>
+      </ValidationObserver>
     </div>
     <div class="ballance">
       <div class="ballance__content">
@@ -48,6 +66,7 @@
 
 <script>
 import CustomButton from "../Reusable/CustomButton.vue";
+import { ValidationProvider } from "vee-validate";
 import {
   connectWallet,
   getTokens,
@@ -57,9 +76,10 @@ import {
   tokenTransfer,
   tokenApprove,
 } from "../../metamask";
+
 export default {
   name: "Main",
-  components: { CustomButton },
+  components: { CustomButton, ValidationProvider },
   data() {
     return {
       tokenArray: [],
@@ -86,16 +106,43 @@ export default {
       connectWallet();
     },
     async gAllowance() {
-      this.allowance = await getAllowance(
-        this.currentToken.address,
-        this.recipient
-      );
+      const address = await this.$refs.address.validate().then((val) => {
+        return val.valid;
+      });
+      if (address) {
+        this.allowance = await getAllowance(
+          this.currentToken.address,
+          this.recipient
+        );
+        return true;
+      }
+      return false;
     },
-    transfer() {
-      tokenTransfer(this.currentToken.address, this.recipient, this.amount);
+    async transfer() {
+      const amount = await this.$refs.amount.validate().then((val) => {
+        return val.valid;
+      });
+      const address = await this.$refs.address.validate().then((val) => {
+        return val.valid;
+      });
+      if (amount && address) {
+        tokenTransfer(this.currentToken.address, this.recipient, this.amount);
+        return true;
+      }
+      return false;
     },
-    approve() {
-      tokenApprove(this.currentToken.address, this.recipient, this.amount);
+    async approve() {
+      const amount = await this.$refs.amount.validate().then((val) => {
+        return val.valid;
+      });
+      const address = await this.$refs.address.validate().then((val) => {
+        return val.valid;
+      });
+      if (amount && address) {
+        tokenApprove(this.currentToken.address, this.recipient, this.amount);
+        return true;
+      }
+      return false;
     },
   },
 };
