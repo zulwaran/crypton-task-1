@@ -1,0 +1,28 @@
+.button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #63bcd8;
+    color: #fff;
+    font-family: "Roboto", sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 21px;
+    cursor: pointer;
+  }
+  .longButton {
+    width: 187px;
+    height: 50px;
+  }
+  .shortButton {
+    width: 144px;
+    height: 70px;
+    position: relative;
+  }
+  .selectButton {
+    position: absolute;
+  }
+  .icon {
+    margin-left: 18px;
+  }
