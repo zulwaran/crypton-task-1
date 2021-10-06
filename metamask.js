@@ -94,19 +94,75 @@ export const getTokens = async () => {
 }
 
 export const getBalance = async (tokenAddress) => {
-    const exampleTokenAddress = tokenAddress
     const userAddress = await getUserAddress()
     if (!userAddress) {
         console.log("metamask is not connected");
         return
     }
-    const decimals = await fetchContractData('decimals', ERC20Abi, exampleTokenAddress)
+    const decimals = await fetchContractData('decimals', ERC20Abi, tokenAddress)
     let balance = await fetchContractData(
         'balanceOf',
         ERC20Abi,
-        exampleTokenAddress,
+        tokenAddress,
         [userAddress]
     )
     balance = new BigNumber(balance).shiftedBy(-decimals).toString()
     return balance
 }
+
+export const getAllowance = async (tokenAddress, recipient) => {
+    if (!tokenAddress || !recipient) {
+        return "-"
+    }
+    userAddress = await getUserAddress();
+    const allowance = await fetchContractData('allowance', ERC20Abi, tokenAddress, [userAddress, recipient])
+    return allowance
+}
+
+
+export const tokenTransfer = async (tokenAddress, recipient, iAmount) => {
+    if (!tokenAddress || !recipient || !iAmount) {
+        return
+    }
+    try {
+        const { ethereum } = window;
+        web3Wallet = new Web3(ethereum);
+        await ethereum.enable();
+        userAddress = await getUserAddress();
+        web4 = new Web4();
+        await web4.setProvider(ethereum, userAddress);
+
+        const absErc20 = web4.getContractAbstraction(ERC20Abi);
+        const instExampleToken = await absErc20.getInstance(tokenAddress);
+        const amount = new BigNumber(iAmount).shiftedBy(+18).toString();
+        const r = await instExampleToken.transfer(recipient, amount);
+        return true;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+};
+
+
+export const tokenApprove = async (tokenAddress, recipient, iAmount) => {
+    if (!tokenAddress || !recipient || !iAmount) {
+        return
+    }
+    try {
+        const { ethereum } = window;
+        web3Wallet = new Web3(ethereum);
+        await ethereum.enable();
+        userAddress = await getUserAddress();
+        web4 = new Web4();
+        await web4.setProvider(ethereum, userAddress);
+
+        const absErc20 = web4.getContractAbstraction(ERC20Abi);
+        const instExampleToken = await absErc20.getInstance(tokenAddress);
+        const amount = new BigNumber(iAmount).shiftedBy(+18).toString();
+        const r = await instExampleToken.approve(recipient, amount);
+        return true;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+};
