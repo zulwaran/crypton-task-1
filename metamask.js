@@ -3,8 +3,8 @@ import Web4 from '@cryptonteam/web4'
 import BigNumber from 'bignumber.js';
 import { ERC20Abi } from './abis'
 
-
-let web4;
+const { ethereum } = window;
+let web4 = new Web4();
 let web3Wallet;
 let web3Guest
 let userAddress;
@@ -19,7 +19,6 @@ const tokenAddressArray = [
 
 export const connectWallet = async () => {
     try {
-        const { ethereum } = window; // ethereum - metamask
         if (!ethereum) {
             console.log('metamask is not install')
             return false;
@@ -34,18 +33,23 @@ export const connectWallet = async () => {
             console.log('current project work on rinkeby network')
             return false;
         }
-
-        web4 = new Web4();
         await web4.setProvider(ethereum, userAddress);
-
         return true;
     } catch (err) {
         return false;
     }
 };
 
+export const checkConnect = async () => {
+    web3Wallet = new Web3(ethereum);
+    let conntected = false
+    if (await web3Wallet.eth.getCoinbase() === null) {
+        conntected = false
+    } else { conntected = true }
+    return conntected
+}
+
 export const getUserAddress = async () => {
-    const { ethereum } = window;
     web3Wallet = new Web3(ethereum);
     userAddress = await web3Wallet.eth.getCoinbase();
     return userAddress
@@ -83,9 +87,11 @@ export const getTokens = async () => {
     for (let i = 0; i < tokenAddressArray.length; i++) {
         const symbol = await fetchContractData('symbol', ERC20Abi, tokenAddressArray[i])
         const name = await fetchContractData('name', ERC20Abi, tokenAddressArray[i])
+        const decimals = await fetchContractData('decimals', ERC20Abi, tokenAddressArray[i])
         const object = {
             symbol: symbol,
             name: name,
+            decimals: decimals,
             address: tokenAddressArray[i],
         }
         objectArray = [...objectArray, object]
@@ -96,8 +102,7 @@ export const getTokens = async () => {
 export const getBalance = async (tokenAddress) => {
     const userAddress = await getUserAddress()
     if (!userAddress) {
-        console.log("metamask is not connected");
-        return
+        return 0
     }
     const decimals = await fetchContractData('decimals', ERC20Abi, tokenAddress)
     let balance = await fetchContractData(
@@ -110,61 +115,39 @@ export const getBalance = async (tokenAddress) => {
     return balance
 }
 
-export const getAllowance = async (tokenAddress, recipient) => {
-    if (!tokenAddress || !recipient) {
+export const getAllowance = async (token, recipient) => {
+    if (!token || !recipient) {
         return "-"
     }
     userAddress = await getUserAddress();
-    const allowance = await fetchContractData('allowance', ERC20Abi, tokenAddress, [userAddress, recipient])
-    return allowance
+    const allowance = await fetchContractData('allowance', ERC20Abi, token.address, [userAddress, recipient])
+    const result = new BigNumber(allowance).shiftedBy(-token.decimals).toString();
+    return result
 }
 
-
-export const tokenTransfer = async (tokenAddress, recipient, iAmount) => {
-    if (!tokenAddress || !recipient || !iAmount) {
+export const tokenAction = async (action, token, recipient, iAmount) => {
+    if (!token || !recipient || !iAmount) {
         return
     }
     try {
-        const { ethereum } = window;
-        web3Wallet = new Web3(ethereum);
-        await ethereum.enable();
         userAddress = await getUserAddress();
-        web4 = new Web4();
         await web4.setProvider(ethereum, userAddress);
 
         const absErc20 = web4.getContractAbstraction(ERC20Abi);
-        const instExampleToken = await absErc20.getInstance(tokenAddress);
-        const decimals = await fetchContractData('decimals', ERC20Abi, tokenAddress)
-        const amount = new BigNumber(iAmount).shiftedBy(+decimals).toString();
-        const r = await instExampleToken.transfer(recipient, amount);
+        const instExampleToken = await absErc20.getInstance(token.address);
+        const amount = new BigNumber(iAmount).shiftedBy(+token.decimals).toString();
+        let result = []
+        switch (action) {
+            case 'approve':
+                result = await instExampleToken.approve(recipient, amount);
+                break;
+            case 'transfer':
+                result = await instExampleToken.transfer(recipient, amount);
+                break;
+        }
         return true;
     } catch (err) {
         console.log(err);
         return false;
     }
-};
-
-
-export const tokenApprove = async (tokenAddress, recipient, iAmount) => {
-    if (!tokenAddress || !recipient || !iAmount) {
-        return
-    }
-    try {
-        const { ethereum } = window;
-        web3Wallet = new Web3(ethereum);
-        await ethereum.enable();
-        userAddress = await getUserAddress();
-        web4 = new Web4();
-        await web4.setProvider(ethereum, userAddress);
-
-        const absErc20 = web4.getContractAbstraction(ERC20Abi);
-        const instExampleToken = await absErc20.getInstance(tokenAddress);
-        const decimals = await fetchContractData('decimals', ERC20Abi, tokenAddress)
-        const amount = new BigNumber(iAmount).shiftedBy(+decimals).toString();
-        const r = await instExampleToken.approve(recipient, amount);
-        return true;
-    } catch (err) {
-        console.log(err);
-        return false;
-    }
-};
+}

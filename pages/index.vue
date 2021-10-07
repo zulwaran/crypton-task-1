@@ -4,7 +4,7 @@
 
 
 <script>
-import MainContaier from "../components/Main/MainContainer.vue";
+import MainContaier from "./MainContainer.vue";
 export default {
   name: "App",
   components: { MainContaier },
