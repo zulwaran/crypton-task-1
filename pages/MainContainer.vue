@@ -78,7 +78,7 @@ import {
   getBalance,
   getAllowance,
   tokenAction,
-} from "../metamask";
+} from "../utilities/metamask";
 
 export default {
   name: "Main",
